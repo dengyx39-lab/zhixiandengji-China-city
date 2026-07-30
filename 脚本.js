@@ -19,8 +19,8 @@
     '居住 · 2年以上',
   ];
 
-  // 中国大致范围（含南海诸岛略压缩到主图区）
-  const 地图范围 = { minLon: 73, maxLon: 135, minLat: 18, maxLat: 54 };
+  // 主版图范围（排除南沙过南坐标，避免版图被拉高导致左右空一大片）
+  const 地图范围 = { minLon: 73.2, maxLon: 135.2, minLat: 18.0, maxLat: 53.7 };
 
   function 显示错误(msg) {
     const el = document.getElementById('错误');
@@ -203,8 +203,8 @@
 
   /** —— 高清全景导出（独立画布，不截屏幕） —— */
 
-  function 投影工厂(rect) {
-    const { minLon, maxLon, minLat, maxLat } = 地图范围;
+  function 投影工厂(rect, 范围) {
+    const { minLon, maxLon, minLat, maxLat } = 范围;
     const geoW = maxLon - minLon;
     const geoH = maxLat - minLat;
     const scale = Math.min(rect.w / geoW, rect.h / geoH);
@@ -220,14 +220,15 @@
     };
   }
 
-  function 遍历环(geometry, fn) {
-    const t = geometry.type;
-    const c = geometry.coordinates;
-    if (t === 'Polygon') {
-      c.forEach((ring) => fn(ring));
-    } else if (t === 'MultiPolygon') {
-      c.forEach((poly) => poly.forEach((ring) => fn(ring)));
+  function 画单个环(ctx, ring, project) {
+    if (!ring || ring.length < 3) return;
+    const p0 = project(ring[0][0], ring[0][1]);
+    ctx.moveTo(p0[0], p0[1]);
+    for (let i = 1; i < ring.length; i++) {
+      const p = project(ring[i][0], ring[i][1]);
+      ctx.lineTo(p[0], p[1]);
     }
+    ctx.closePath();
   }
 
   function 外环质心(geometry) {
@@ -254,29 +255,32 @@
     return [sx / count, sy / count];
   }
 
+  /**
+   * 按每个 Polygon 单独填色，避免 MultiPolygon 共用 evenodd 在简化边界上“挖穿”成海蓝。
+   */
   function 绘制多边形(ctx, geometry, project, fill, stroke) {
-    ctx.beginPath();
-    let firstRing = true;
-    遍历环(geometry, (ring) => {
-      if (!ring.length) return;
-      const p0 = project(ring[0][0], ring[0][1]);
-      if (firstRing) {
-        ctx.moveTo(p0[0], p0[1]);
-        firstRing = false;
-      } else {
-        ctx.moveTo(p0[0], p0[1]);
+    const polys =
+      geometry.type === 'Polygon'
+        ? [geometry.coordinates]
+        : geometry.type === 'MultiPolygon'
+          ? geometry.coordinates
+          : [];
+
+    for (const rings of polys) {
+      if (!rings || !rings.length) continue;
+      ctx.beginPath();
+      // 只画外环填色（nonzero），内环洞用 evenodd 扣掉
+      画单个环(ctx, rings[0], project);
+      for (let i = 1; i < rings.length; i++) {
+        画单个环(ctx, rings[i], project);
       }
-      for (let i = 1; i < ring.length; i++) {
-        const p = project(ring[i][0], ring[i][1]);
-        ctx.lineTo(p[0], p[1]);
-      }
-      ctx.closePath();
-    });
-    ctx.fillStyle = fill;
-    ctx.fill('evenodd');
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
+      ctx.fillStyle = fill;
+      if (rings.length > 1) ctx.fill('evenodd');
+      else ctx.fill('nonzero');
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+    }
   }
 
   function 圆角矩形(ctx, x, y, w, h, r) {
@@ -290,27 +294,29 @@
   }
 
   function 渲染全景图(市FC) {
-    // 略收窄画布，减少左右留白；高度略增让地图更撑满
-    const W = 6800;
-    const H = 5800;
-    const 顶栏高 = 200;
-    const 边距 = 56;
+    // 按中国主版图像素比收窄画布（减少左右海蓝留白）
+    const 范围 = 地图范围;
+    const geoAspect = (范围.maxLon - 范围.minLon) / (范围.maxLat - 范围.minLat);
+    const 顶栏高 = 220;
+    const 边距 = 48;
+    const 地图高 = 5200;
+    const 地图宽 = Math.round(地图高 * geoAspect);
+    const W = 地图宽 + 边距 * 2;
+    const H = 顶栏高 + 地图高 + 边距 + 36;
 
     const canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // 海面背景
     ctx.fillStyle = '#a8d4f0';
     ctx.fillRect(0, 0, W, H);
 
-    // 顶栏白底
     ctx.fillStyle = 'rgba(255,255,255,0.96)';
     ctx.fillRect(0, 0, W, 顶栏高);
 
     ctx.fillStyle = '#111';
-    ctx.font = 'bold 88px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = 'bold 84px "PingFang SC","Microsoft YaHei",sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText('制县等级 中国地级市版', 边距, 顶栏高 / 2);
@@ -318,27 +324,24 @@
     const 去过 = 统计去过();
     const 总分 = 制县计分.计算总分(分数表);
     ctx.textAlign = 'right';
-    ctx.font = 'bold 58px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = 'bold 56px "PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillText(`${去过}/${清单.length}`, W - 边距, 顶栏高 / 2 - 36);
-    ctx.font = 'bold 66px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = 'bold 64px "PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillText(`总分 ${总分}`, W - 边距, 顶栏高 / 2 + 36);
 
-    // 地图区域
     const mapRect = {
       x: 边距,
-      y: 顶栏高 + 24,
-      w: W - 边距 * 2,
-      h: H - 顶栏高 - 边距 - 24,
+      y: 顶栏高 + 20,
+      w: 地图宽,
+      h: 地图高,
     };
-    const project = 投影工厂(mapRect);
+    const project = 投影工厂(mapRect, 范围);
 
-    // 先画所有市填色
     for (const f of 市FC.features) {
       const s = Number(分数表[f.properties.id]) || 0;
       绘制多边形(ctx, f.geometry, project, 制县计分.颜色[s], '#444');
     }
 
-    // 再画全部市名（缩略显小，放大可看清）
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '28px "PingFang SC","Microsoft YaHei",sans-serif';
@@ -348,42 +351,42 @@
     for (const f of 市FC.features) {
       const c = 外环质心(f.geometry);
       if (!c) continue;
-      if (c[0] < 地图范围.minLon || c[0] > 地图范围.maxLon) continue;
-      if (c[1] < 地图范围.minLat || c[1] > 地图范围.maxLat) continue;
+      if (c[1] < 16) continue; // 南沙标签不挤进主图
+      if (c[0] < 范围.minLon || c[0] > 范围.maxLon) continue;
+      if (c[1] < 范围.minLat || c[1] > 范围.maxLat) continue;
       const [x, y] = project(c[0], c[1]);
-      const name = f.properties.名称;
-      ctx.strokeText(name, x, y);
-      ctx.fillText(name, x, y);
+      ctx.strokeText(f.properties.名称, x, y);
+      ctx.fillText(f.properties.名称, x, y);
     }
 
-    // 左下图例卡片（加大）
-    const lw = 780;
-    const lh = 620;
+    // 更大的左下图例
+    const lw = 1080;
+    const lh = 860;
     const lx = 边距;
     const ly = H - 边距 - lh;
-    圆角矩形(ctx, lx, ly, lw, lh, 24);
-    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    圆角矩形(ctx, lx, ly, lw, lh, 28);
+    ctx.fillStyle = 'rgba(255,255,255,0.97)';
     ctx.fill();
-    ctx.strokeStyle = '#bbb';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#aaa';
+    ctx.lineWidth = 4;
     ctx.stroke();
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 56px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = 'bold 72px "PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillStyle = '#111';
-    ctx.fillText('图例', lx + 48, ly + 70);
+    ctx.fillText('图例', lx + 56, ly + 90);
 
     for (let i = 0; i <= 5; i++) {
-      const rowY = ly + 150 + i * 74;
+      const rowY = ly + 200 + i * 100;
       ctx.fillStyle = 制县计分.颜色[i];
-      ctx.fillRect(lx + 48, rowY - 26, 72, 52);
-      ctx.strokeStyle = '#888';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(lx + 48, rowY - 26, 72, 52);
+      ctx.fillRect(lx + 56, rowY - 36, 96, 72);
+      ctx.strokeStyle = '#777';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(lx + 56, rowY - 36, 96, 72);
       ctx.fillStyle = '#222';
-      ctx.font = '48px "PingFang SC","Microsoft YaHei",sans-serif';
-      ctx.fillText(`${i}  ${文案[i]}`, lx + 148, rowY);
+      ctx.font = '60px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillText(`${i}  ${文案[i]}`, lx + 180, rowY);
     }
 
     return canvas;
@@ -421,7 +424,7 @@
 
   async function 生成高清全景() {
     关闭面板();
-    显示提示('正在生成高清全景图（约 6800px，请稍候）…');
+    显示提示('正在生成高清全景图，请稍候…');
     await 确保市数据();
     // 让出主线程，避免按钮卡住无反馈
     await new Promise((r) => setTimeout(r, 40));
