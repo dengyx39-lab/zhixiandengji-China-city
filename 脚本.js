@@ -64,7 +64,7 @@
     const c = 制县计分.颜色[s];
     return {
       fillColor: c,
-      weight: 1.1,
+      weight: 0.6,
       color: '#555', // 可见市界
       opacity: 1,
       fillOpacity: 1,
@@ -79,7 +79,7 @@
     const c = 制县计分.颜色[info.最高分 || 0];
     return {
       fillColor: c,
-      weight: 1.3,
+      weight: 0.8,
       color: '#333', // 可见省界
       opacity: 1,
       fillOpacity: 1,
