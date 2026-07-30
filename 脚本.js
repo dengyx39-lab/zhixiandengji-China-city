@@ -286,7 +286,7 @@
       if (rings.length > 1) ctx.fill('evenodd');
       else ctx.fill('nonzero');
       ctx.strokeStyle = stroke;
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 0.7;
       ctx.lineJoin = 'round';
       ctx.stroke();
     }
