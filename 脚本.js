@@ -290,11 +290,11 @@
   }
 
   function 渲染全景图(市FC) {
-    // 高像素全景：缩略看小、放大清晰；文件会偏大属预期
-    const W = 8000;
-    const H = 5600;
-    const 顶栏高 = 220;
-    const 边距 = 80;
+    // 略收窄画布，减少左右留白；高度略增让地图更撑满
+    const W = 6800;
+    const H = 5800;
+    const 顶栏高 = 200;
+    const 边距 = 56;
 
     const canvas = document.createElement('canvas');
     canvas.width = W;
@@ -310,7 +310,7 @@
     ctx.fillRect(0, 0, W, 顶栏高);
 
     ctx.fillStyle = '#111';
-    ctx.font = 'bold 96px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = 'bold 88px "PingFang SC","Microsoft YaHei",sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText('制县等级 中国地级市版', 边距, 顶栏高 / 2);
@@ -318,17 +318,17 @@
     const 去过 = 统计去过();
     const 总分 = 制县计分.计算总分(分数表);
     ctx.textAlign = 'right';
-    ctx.font = 'bold 64px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText(`${去过}/${清单.length}`, W - 边距, 顶栏高 / 2 - 40);
-    ctx.font = 'bold 72px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText(`总分 ${总分}`, W - 边距, 顶栏高 / 2 + 40);
+    ctx.font = 'bold 58px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText(`${去过}/${清单.length}`, W - 边距, 顶栏高 / 2 - 36);
+    ctx.font = 'bold 66px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillText(`总分 ${总分}`, W - 边距, 顶栏高 / 2 + 36);
 
     // 地图区域
     const mapRect = {
       x: 边距,
-      y: 顶栏高 + 40,
+      y: 顶栏高 + 24,
       w: W - 边距 * 2,
-      h: H - 顶栏高 - 边距 - 40,
+      h: H - 顶栏高 - 边距 - 24,
     };
     const project = 投影工厂(mapRect);
 
@@ -338,7 +338,7 @@
       绘制多边形(ctx, f.geometry, project, 制县计分.颜色[s], '#444');
     }
 
-    // 再画全部市名（画布约 8000px 宽；缩略显小，放大可看清）
+    // 再画全部市名（缩略显小，放大可看清）
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '28px "PingFang SC","Microsoft YaHei",sans-serif';
@@ -356,33 +356,34 @@
       ctx.fillText(name, x, y);
     }
 
-    // 左下图例卡片
+    // 左下图例卡片（加大）
+    const lw = 780;
+    const lh = 620;
     const lx = 边距;
-    const ly = H - 边距 - 420;
-    const lw = 520;
-    const lh = 400;
-    圆角矩形(ctx, lx, ly, lw, lh, 16);
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    const ly = H - 边距 - lh;
+    圆角矩形(ctx, lx, ly, lw, lh, 24);
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
     ctx.fill();
-    ctx.strokeStyle = '#ccc';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#bbb';
+    ctx.lineWidth = 3;
     ctx.stroke();
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 36px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = 'bold 56px "PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillStyle = '#111';
-    ctx.fillText('图例', lx + 36, ly + 48);
+    ctx.fillText('图例', lx + 48, ly + 70);
 
     for (let i = 0; i <= 5; i++) {
-      const rowY = ly + 100 + i * 48;
+      const rowY = ly + 150 + i * 74;
       ctx.fillStyle = 制县计分.颜色[i];
-      ctx.fillRect(lx + 36, rowY - 16, 48, 32);
+      ctx.fillRect(lx + 48, rowY - 26, 72, 52);
       ctx.strokeStyle = '#888';
-      ctx.strokeRect(lx + 36, rowY - 16, 48, 32);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(lx + 48, rowY - 26, 72, 52);
       ctx.fillStyle = '#222';
-      ctx.font = '32px "PingFang SC","Microsoft YaHei",sans-serif';
-      ctx.fillText(`${i}  ${文案[i]}`, lx + 100, rowY);
+      ctx.font = '48px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillText(`${i}  ${文案[i]}`, lx + 148, rowY);
     }
 
     return canvas;
@@ -420,7 +421,7 @@
 
   async function 生成高清全景() {
     关闭面板();
-    显示提示('正在生成高清全景图（约 8000px，请稍候）…');
+    显示提示('正在生成高清全景图（约 6800px，请稍候）…');
     await 确保市数据();
     // 让出主线程，避免按钮卡住无反馈
     await new Promise((r) => setTimeout(r, 40));
