@@ -61,22 +61,30 @@
 
   function 市样式(feature) {
     const s = Number(分数表[feature.properties.id]) || 0;
+    const c = 制县计分.颜色[s];
     return {
-      fillColor: 制县计分.颜色[s],
-      weight: 1,
-      color: '#555',
-      fillOpacity: 0.85,
+      fillColor: c,
+      weight: 1.6,
+      color: c, // 同色描边，盖住接缝露底
+      opacity: 1,
+      fillOpacity: 1,
+      lineJoin: 'round',
+      lineCap: 'round',
     };
   }
 
   function 省样式(feature) {
     const key = feature.properties.所属省;
     const info = 省汇总[key] || { 最高分: 0 };
+    const c = 制县计分.颜色[info.最高分 || 0];
     return {
-      fillColor: 制县计分.颜色[info.最高分 || 0],
-      weight: 1.2,
-      color: '#333',
-      fillOpacity: 0.85,
+      fillColor: c,
+      weight: 1.8,
+      color: c,
+      opacity: 1,
+      fillOpacity: 1,
+      lineJoin: 'round',
+      lineCap: 'round',
     };
   }
 
@@ -277,8 +285,13 @@
       ctx.fillStyle = fill;
       if (rings.length > 1) ctx.fill('evenodd');
       else ctx.fill('nonzero');
+      // 同色略粗描边，盖住相邻市接缝露海蓝
+      ctx.strokeStyle = fill;
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
       ctx.strokeStyle = stroke;
-      ctx.lineWidth = 1.1;
+      ctx.lineWidth = 0.6;
       ctx.stroke();
     }
   }
