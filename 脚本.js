@@ -24,6 +24,48 @@
   // 主版图范围（排除南沙过南坐标，避免版图被拉高导致左右空一大片）
   const 地图范围 = { minLon: 73.2, maxLon: 135.2, minLat: 18.0, maxLat: 53.7 };
 
+  function 是微信() {
+    return /MicroMessenger/i.test(navigator.userAgent || '');
+  }
+
+  function 收集已上色() {
+    const 精简 = {};
+    for (const id of Object.keys(分数表)) {
+      const s = Number(分数表[id]) || 0;
+      if (s > 0) 精简[id] = s;
+    }
+    return 精简;
+  }
+
+  function 从哈希读取足迹() {
+    const hash = location.hash || '';
+    const m = hash.match(/^#z=(.+)$/);
+    if (!m) return null;
+    try {
+      const data = JSON.parse(decodeURIComponent(m[1]));
+      return data && typeof data === 'object' ? data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function 同步哈希足迹() {
+    // 仅微信内写入 URL，方便「用浏览器打开」带走足迹；普通浏览器不加，避免误分享带数据的链接
+    if (!是微信()) return;
+    const 精简 = 收集已上色();
+    const base = location.pathname + location.search;
+    if (!Object.keys(精简).length) {
+      history.replaceState(null, '', base);
+      return;
+    }
+    history.replaceState(null, '', base + '#z=' + encodeURIComponent(JSON.stringify(精简)));
+  }
+
+  function 清除哈希足迹() {
+    const base = location.pathname + location.search;
+    if (location.hash) history.replaceState(null, '', base);
+  }
+
   function 读取缓存() {
     try {
       const raw = localStorage.getItem(缓存键);
@@ -43,21 +85,17 @@
 
   function 写入缓存() {
     try {
-      // 只要上过色（有任意非 0）就保存；全是 0 则清掉缓存
-      const 有上色 = Object.keys(分数表).some((id) => (Number(分数表[id]) || 0) > 0);
-      if (!有上色) {
+      const 精简 = 收集已上色();
+      if (!Object.keys(精简).length) {
         localStorage.removeItem(缓存键);
+        同步哈希足迹();
         return;
-      }
-      const 精简 = {};
-      for (const id of Object.keys(分数表)) {
-        const s = Number(分数表[id]) || 0;
-        if (s > 0) 精简[id] = s;
       }
       localStorage.setItem(
         缓存键,
         JSON.stringify({ 分数表: 精简, 保存于: Date.now() })
       );
+      同步哈希足迹();
     } catch (e) {
       console.warn('本地缓存写入失败', e);
     }
@@ -84,7 +122,32 @@
     } catch (_) {
       /* ignore */
     }
+    清除哈希足迹();
     刷新上色();
+  }
+
+  function 显示全景预览(url) {
+    const box = document.getElementById('全景预览');
+    const img = document.getElementById('全景预览图');
+    if (!box || !img) return;
+    if (img.dataset.blobUrl) {
+      URL.revokeObjectURL(img.dataset.blobUrl);
+      delete img.dataset.blobUrl;
+    }
+    img.src = url;
+    if (url.indexOf('blob:') === 0) img.dataset.blobUrl = url;
+    box.hidden = false;
+  }
+
+  function 关闭全景预览() {
+    const box = document.getElementById('全景预览');
+    const img = document.getElementById('全景预览图');
+    if (box) box.hidden = true;
+    if (img && img.dataset.blobUrl) {
+      URL.revokeObjectURL(img.dataset.blobUrl);
+      delete img.dataset.blobUrl;
+      img.removeAttribute('src');
+    }
   }
 
   function 显示错误(msg) {
@@ -502,9 +565,31 @@
     关闭面板();
     显示提示('正在生成高清全景图，请稍候…');
     await 确保市数据();
-    // 让出主线程，避免按钮卡住无反馈
     await new Promise((r) => setTimeout(r, 40));
     const canvas = 渲染全景图(市数据);
+
+    if (是微信()) {
+      // 微信无法直接下载：预览后长按保存；同时写入 URL，便于「浏览器打开」带走足迹
+      同步哈希足迹();
+      await new Promise((resolve, reject) => {
+        if (!canvas.toBlob) {
+          显示全景预览(canvas.toDataURL('image/png'));
+          resolve();
+          return;
+        }
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('toBlob failed'));
+            return;
+          }
+          显示全景预览(URL.createObjectURL(blob));
+          resolve();
+        }, 'image/png');
+      });
+      显示提示('');
+      return;
+    }
+
     await 下载Canvas(canvas, '制县等级-中国地级市版-全景.png');
     显示提示('');
   }
@@ -531,8 +616,19 @@
         }
       };
     }
+    const 关闭预览 = document.getElementById('关闭全景预览');
+    if (关闭预览) 关闭预览.onclick = 关闭全景预览;
+    const 预览层 = document.getElementById('全景预览');
+    if (预览层) {
+      预览层.addEventListener('click', (e) => {
+        if (e.target === 预览层) 关闭全景预览();
+      });
+    }
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') 关闭面板();
+      if (e.key === 'Escape') {
+        关闭面板();
+        关闭全景预览();
+      }
     });
   }
 
@@ -556,7 +652,10 @@
 
       清单 = 清;
       for (const u of 清单) 分数表[u.id] = 0;
-      应用缓存到分数表(读取缓存());
+      // 优先读 URL（微信→系统浏览器可带走足迹），否则读本机 7 天缓存
+      const 来自链接 = 应用缓存到分数表(从哈希读取足迹());
+      if (!来自链接) 应用缓存到分数表(读取缓存());
+      else 写入缓存(); // 写入当前浏览器 localStorage，之后刷新也能留
       省汇总 = 制县计分.按省汇总(清单, 分数表);
 
       map = L.map('地图', {

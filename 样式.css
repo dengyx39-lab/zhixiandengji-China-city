@@ -129,3 +129,60 @@ html, body, #应用, #地图 {
   font-size: 10px;
   font-weight: 500;
 }
+
+#全景预览 {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+#全景预览[hidden] {
+  display: none !important;
+}
+
+.全景预览卡 {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  max-width: min(960px, 100%);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.全景预览提示 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  color: #222;
+}
+
+.全景预览图箱 {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: 70vh;
+  background: #a8d4f0;
+}
+
+#全景预览图 {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-touch-callout: default;
+  pointer-events: auto;
+  user-select: none;
+}
+
+#关闭全景预览 {
+  align-self: center;
+  padding: 8px 20px;
+  font-size: 0.95rem;
+}
