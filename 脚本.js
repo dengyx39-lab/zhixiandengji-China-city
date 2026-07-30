@@ -526,7 +526,7 @@
     const 清除按钮 = document.getElementById('清除足迹');
     if (清除按钮) {
       清除按钮.onclick = () => {
-        if (confirm('清除本机已保存的足迹？（分享链接不受影响）')) {
+        if (confirm('确定要清除足迹吗？\n将清空地图上色，并删除本机 7 天缓存。')) {
           清除足迹();
         }
       };

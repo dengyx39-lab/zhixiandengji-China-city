@@ -75,6 +75,16 @@ html, body, #应用, #地图 {
   margin-top: 4px;
 }
 
+#操作 .操作行 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+#操作 .操作行 + .操作行 {
+  margin-top: 2px;
+}
+
 #面板 {
   position: absolute;
   z-index: 1100;
