@@ -10,6 +10,11 @@
 html, body, #应用, #地图 {
   height: 100%;
   margin: 0;
+  background: #a8d4f0; /* 大海浅蓝 */
+}
+
+.leaflet-container {
+  background: #a8d4f0;
 }
 
 #顶栏 {
@@ -25,6 +30,26 @@ html, body, #应用, #地图 {
 #顶栏 h1 {
   margin: 0 0 8px;
   font-size: 1.1rem;
+}
+
+#总分栏 {
+  position: absolute;
+  z-index: 1000;
+  right: 12px;
+  top: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 10px 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: right;
+  line-height: 1.35;
+}
+
+#去过统计 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 2px;
 }
 
 #图例 {
@@ -80,7 +105,8 @@ html, body, #应用, #地图 {
   font-size: 1rem;
 }
 
-.省标签 {
+.省标签,
+.市标签 {
   background: transparent;
   border: none;
   box-shadow: none;
@@ -88,4 +114,9 @@ html, body, #应用, #地图 {
   font-size: 11px;
   font-weight: 600;
   text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
+}
+
+.市标签 {
+  font-size: 10px;
+  font-weight: 500;
 }

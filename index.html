@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>制县等级 · 国内版</title>
+  <title>制县等级 中国地级市版</title>
   <link rel="stylesheet" href="库/leaflet/leaflet.css" />
   <link rel="stylesheet" href="样式.css" />
 </head>
 <body>
   <div id="应用">
     <header id="顶栏">
-      <h1>制县等级 · 国内版 <span id="分数">0</span>/<span id="满分">0</span></h1>
+      <h1>制县等级 中国地级市版</h1>
       <table id="图例">
         <tr data-级别="0"><td>0</td><td>没去过</td></tr>
         <tr data-级别="1"><td>1</td><td>玩过</td></tr>
@@ -24,6 +24,10 @@
         <button type="button" id="生成图片">生成图片</button>
       </div>
     </header>
+    <div id="总分栏">
+      <div id="去过统计"><span id="去过数">0</span>/<span id="总数">0</span></div>
+      <div>总分 <span id="分数">0</span></div>
+    </div>
     <div id="地图"></div>
     <div id="面板" hidden>
       <h2 id="面板标题"></h2>

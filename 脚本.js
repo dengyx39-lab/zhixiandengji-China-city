@@ -24,6 +24,12 @@
 
   function 刷新分数显示() {
     document.getElementById('分数').textContent = String(制县计分.计算总分(分数表));
+    let 去过 = 0;
+    for (const u of 清单) {
+      if ((Number(分数表[u.id]) || 0) >= 1) 去过 += 1;
+    }
+    document.getElementById('去过数').textContent = String(去过);
+    document.getElementById('总数').textContent = String(清单.length);
   }
 
   function 市样式(feature) {
@@ -120,12 +126,12 @@
         const node = document.getElementById('应用');
         const canvas = await html2canvas(node, {
           useCORS: true,
-          backgroundColor: '#ffffff',
+          backgroundColor: '#a8d4f0',
           logging: false,
         });
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
-        a.download = '制县等级-国内版.png';
+        a.download = '制县等级-中国地级市版.png';
         a.click();
       } catch (e) {
         console.error(e);
@@ -161,7 +167,6 @@
 
       清单 = 清;
       for (const u of 清单) 分数表[u.id] = 0;
-      document.getElementById('满分').textContent = String(制县计分.计算满分(清单.length));
       省汇总 = 制县计分.按省汇总(清单, 分数表);
 
       map = L.map('地图', {
@@ -190,7 +195,11 @@
         onEachFeature: (feature, layer) => {
           const id = feature.properties.id;
           const 名称 = feature.properties.名称;
-          layer.bindTooltip(名称, { sticky: true, direction: 'top' });
+          layer.bindTooltip(名称, {
+            permanent: true,
+            direction: 'center',
+            className: '市标签',
+          });
           layer.on('click', (e) => {
             L.DomEvent.stopPropagation(e);
             const pt = map.mouseEventToContainerPoint(e.originalEvent);
