@@ -203,9 +203,9 @@
 
   /** —— 高清全景导出（独立画布，不截屏幕） —— */
 
-  function 投影工厂(rect, 范围) {
+  function 投影工厂(rect, 范围, 横向压缩 = 1) {
     const { minLon, maxLon, minLat, maxLat } = 范围;
-    const geoW = maxLon - minLon;
+    const geoW = (maxLon - minLon) * 横向压缩;
     const geoH = maxLat - minLat;
     const scale = Math.min(rect.w / geoW, rect.h / geoH);
     const usedW = geoW * scale;
@@ -214,7 +214,7 @@
     const oy = rect.y + (rect.h - usedH) / 2;
     return function project(lon, lat) {
       return [
-        ox + (lon - minLon) * scale,
+        ox + (lon - minLon) * 横向压缩 * scale,
         oy + (maxLat - lat) * scale,
       ];
     };
@@ -294,9 +294,10 @@
   }
 
   function 渲染全景图(市FC) {
-    // 按中国主版图像素比收窄画布（减少左右海蓝留白）
+    // 横向略压缩陆地轮廓（经度方向），让版图不那么“左右宽”
+    const 横向压缩 = 0.82;
     const 范围 = 地图范围;
-    const geoAspect = (范围.maxLon - 范围.minLon) / (范围.maxLat - 范围.minLat);
+    const geoAspect = ((范围.maxLon - 范围.minLon) * 横向压缩) / (范围.maxLat - 范围.minLat);
     const 顶栏高 = 220;
     const 边距 = 48;
     const 地图高 = 5200;
@@ -335,7 +336,7 @@
       w: 地图宽,
       h: 地图高,
     };
-    const project = 投影工厂(mapRect, 范围);
+    const project = 投影工厂(mapRect, 范围, 横向压缩);
 
     for (const f of 市FC.features) {
       const s = Number(分数表[f.properties.id]) || 0;
