@@ -64,8 +64,8 @@
     const c = 制县计分.颜色[s];
     return {
       fillColor: c,
-      weight: 1.6,
-      color: c, // 同色描边，盖住接缝露底
+      weight: 1.1,
+      color: '#555', // 可见市界
       opacity: 1,
       fillOpacity: 1,
       lineJoin: 'round',
@@ -79,8 +79,8 @@
     const c = 制县计分.颜色[info.最高分 || 0];
     return {
       fillColor: c,
-      weight: 1.8,
-      color: c,
+      weight: 1.3,
+      color: '#333', // 可见省界
       opacity: 1,
       fillOpacity: 1,
       lineJoin: 'round',
@@ -285,13 +285,9 @@
       ctx.fillStyle = fill;
       if (rings.length > 1) ctx.fill('evenodd');
       else ctx.fill('nonzero');
-      // 同色略粗描边，盖住相邻市接缝露海蓝
-      ctx.strokeStyle = fill;
-      ctx.lineWidth = 2.2;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
       ctx.strokeStyle = stroke;
-      ctx.lineWidth = 0.6;
+      ctx.lineWidth = 1.2;
+      ctx.lineJoin = 'round';
       ctx.stroke();
     }
   }
