@@ -1,0 +1,70 @@
+:root {
+  --c0: #f2f2f2;
+  --c1: #3cb371; /* 绿 */
+  --c2: #4169e1; /* 蓝 */
+  --c3: #ffd700; /* 黄 */
+  --c4: #ff8c00; /* 橙 */
+  --c5: #dc143c; /* 红 */
+}
+
+html, body, #应用, #地图 {
+  height: 100%;
+  margin: 0;
+}
+
+#顶栏 {
+  position: absolute;
+  z-index: 1000;
+  left: 12px;
+  top: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 12px;
+  max-width: 280px;
+}
+
+#顶栏 h1 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+#图例 {
+  border-collapse: collapse;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+#图例 td {
+  padding: 2px 6px;
+  font-size: 0.85rem;
+}
+
+#图例 tr[data-级别="0"] td:first-child { background: var(--c0); }
+#图例 tr[data-级别="1"] td:first-child { background: var(--c1); }
+#图例 tr[data-级别="2"] td:first-child { background: var(--c2); }
+#图例 tr[data-级别="3"] td:first-child { background: var(--c3); }
+#图例 tr[data-级别="4"] td:first-child { background: var(--c4); }
+#图例 tr[data-级别="5"] td:first-child { background: var(--c5); }
+
+#操作 button {
+  margin-right: 6px;
+  margin-top: 4px;
+}
+
+#面板 {
+  position: absolute;
+  z-index: 1100;
+  background: #fff;
+  padding: 12px;
+  border: 1px solid #ccc;
+  min-width: 180px;
+}
+
+#错误 {
+  position: absolute;
+  z-index: 1200;
+  left: 12px;
+  bottom: 12px;
+  color: #b00020;
+  background: #fff;
+  padding: 8px;
+}

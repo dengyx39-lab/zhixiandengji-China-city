@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>制县等级 · 国内版</title>
+  <link rel="stylesheet" href="库/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="样式.css" />
+</head>
+<body>
+  <div id="应用">
+    <header id="顶栏">
+      <h1>制县等级 · 国内版 <span id="分数">0</span>/<span id="满分">0</span></h1>
+      <table id="图例">
+        <tr data-级别="0"><td>0</td><td>没去过</td></tr>
+        <tr data-级别="1"><td>1</td><td>玩过</td></tr>
+        <tr data-级别="2"><td>2</td><td>睡过</td></tr>
+        <tr data-级别="3"><td>3</td><td>居住 · 半年内</td></tr>
+        <tr data-级别="4"><td>4</td><td>居住 · 半年–2年</td></tr>
+        <tr data-级别="5"><td>5</td><td>居住 · 2年以上</td></tr>
+      </table>
+      <div id="操作">
+        <button type="button" id="重置视野">重置视野</button>
+        <button type="button" id="生成图片">生成图片</button>
+      </div>
+    </header>
+    <div id="地图"></div>
+    <div id="面板" hidden>
+      <h2 id="面板标题"></h2>
+      <ul id="档位列表"></ul>
+      <button type="button" id="关闭面板">关闭</button>
+    </div>
+    <p id="错误" hidden></p>
+  </div>
+  <script src="库/leaflet/leaflet.js"></script>
+  <script src="库/html2canvas/html2canvas.min.js"></script>
+  <script src="计分.js"></script>
+  <script src="脚本.js"></script>
+</body>
+</html>
