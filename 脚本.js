@@ -4,8 +4,10 @@
   let 清单 = [];
   let map;
   let 省层;
-  let 市层;
+  let 市层 = null;
   let 省汇总 = {};
+  let 市加载中 = null;
+  let 市已就绪 = false;
 
   const 文案 = [
     '没去过',
@@ -19,6 +21,18 @@
   function 显示错误(msg) {
     const el = document.getElementById('错误');
     el.hidden = false;
+    el.textContent = msg;
+  }
+
+  function 显示提示(msg) {
+    const el = document.getElementById('错误');
+    if (!msg) {
+      el.hidden = true;
+      el.textContent = '';
+      return;
+    }
+    el.hidden = false;
+    el.style.color = '#135';
     el.textContent = msg;
   }
 
@@ -71,14 +85,67 @@
     刷新分数显示();
   }
 
-  function 更新图层显隐() {
+  function 创建市层(市) {
+    return L.geoJSON(市, {
+      style: 市样式,
+      onEachFeature: (feature, layer) => {
+        const id = feature.properties.id;
+        const 名称 = feature.properties.名称;
+        layer.bindTooltip(名称, {
+          permanent: true,
+          direction: 'center',
+          className: '市标签',
+        });
+        layer.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          const pt = map.mouseEventToContainerPoint(e.originalEvent);
+          打开面板(id, 名称, pt);
+        });
+      },
+    });
+  }
+
+  async function 确保市层() {
+    if (市已就绪 && 市层) return 市层;
+    if (市加载中) return 市加载中;
+
+    显示提示('正在加载市级地图…');
+    市加载中 = fetch('数据/市.geojson')
+      .then((r) => {
+        if (!r.ok) throw new Error('市.geojson');
+        return r.json();
+      })
+      .then((市) => {
+        市层 = 创建市层(市);
+        市已就绪 = true;
+        显示提示('');
+        document.getElementById('错误').style.color = '#b00020';
+        return 市层;
+      })
+      .catch((e) => {
+        市加载中 = null;
+        console.error(e);
+        显示错误('市级地图加载失败，请刷新重试');
+        throw e;
+      });
+
+    return 市加载中;
+  }
+
+  async function 更新图层显隐() {
     if (!map) return;
     const z = map.getZoom();
     if (z >= 市层阈值) {
-      if (map.hasLayer(省层)) map.removeLayer(省层);
-      if (!map.hasLayer(市层)) map.addLayer(市层);
+      try {
+        const layer = await 确保市层();
+        if (map.getZoom() < 市层阈值) return; // 加载期间又缩小了
+        if (map.hasLayer(省层)) map.removeLayer(省层);
+        if (!map.hasLayer(layer)) map.addLayer(layer);
+      } catch (_) {
+        /* 错误已展示 */
+      }
     } else {
-      if (map.hasLayer(市层)) map.removeLayer(市层);
+      if (市层 && map.hasLayer(市层)) map.removeLayer(市层);
       if (!map.hasLayer(省层)) map.addLayer(省层);
     }
   }
@@ -150,13 +217,10 @@
     }
 
     try {
-      const [省, 市, 清] = await Promise.all([
+      // 首屏只拉省界 + 清单（轻量）；市界放大后再加载
+      const [省, 清] = await Promise.all([
         fetch('数据/省.geojson').then((r) => {
           if (!r.ok) throw new Error('省.geojson');
-          return r.json();
-        }),
-        fetch('数据/市.geojson').then((r) => {
-          if (!r.ok) throw new Error('市.geojson');
           return r.json();
         }),
         fetch('数据/清单.json').then((r) => {
@@ -190,25 +254,9 @@
         },
       });
 
-      市层 = L.geoJSON(市, {
-        style: 市样式,
-        onEachFeature: (feature, layer) => {
-          const id = feature.properties.id;
-          const 名称 = feature.properties.名称;
-          layer.bindTooltip(名称, {
-            permanent: true,
-            direction: 'center',
-            className: '市标签',
-          });
-          layer.on('click', (e) => {
-            L.DomEvent.stopPropagation(e);
-            const pt = map.mouseEventToContainerPoint(e.originalEvent);
-            打开面板(id, 名称, pt);
-          });
-        },
+      map.on('zoomend', () => {
+        更新图层显隐();
       });
-
-      map.on('zoomend', 更新图层显隐);
       map.on('click', 关闭面板);
       更新图层显隐();
       绑定按钮();
