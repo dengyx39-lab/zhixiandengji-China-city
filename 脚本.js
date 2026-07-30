@@ -1,5 +1,7 @@
 (function () {
   const 市层阈值 = 6;
+  const 缓存键 = '制县等级-中国地级市版-足迹';
+  const 缓存有效毫秒 = 7 * 24 * 60 * 60 * 1000; // 7 天
   const 分数表 = Object.create(null);
   let 清单 = [];
   let map;
@@ -21,6 +23,69 @@
 
   // 主版图范围（排除南沙过南坐标，避免版图被拉高导致左右空一大片）
   const 地图范围 = { minLon: 73.2, maxLon: 135.2, minLat: 18.0, maxLat: 53.7 };
+
+  function 读取缓存() {
+    try {
+      const raw = localStorage.getItem(缓存键);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || typeof data !== 'object' || !data.分数表) return null;
+      if (typeof data.保存于 !== 'number') return null;
+      if (Date.now() - data.保存于 > 缓存有效毫秒) {
+        localStorage.removeItem(缓存键);
+        return null;
+      }
+      return data.分数表;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function 写入缓存() {
+    try {
+      // 只要上过色（有任意非 0）就保存；全是 0 则清掉缓存
+      const 有上色 = Object.keys(分数表).some((id) => (Number(分数表[id]) || 0) > 0);
+      if (!有上色) {
+        localStorage.removeItem(缓存键);
+        return;
+      }
+      const 精简 = {};
+      for (const id of Object.keys(分数表)) {
+        const s = Number(分数表[id]) || 0;
+        if (s > 0) 精简[id] = s;
+      }
+      localStorage.setItem(
+        缓存键,
+        JSON.stringify({ 分数表: 精简, 保存于: Date.now() })
+      );
+    } catch (e) {
+      console.warn('本地缓存写入失败', e);
+    }
+  }
+
+  function 应用缓存到分数表(缓存分数) {
+    if (!缓存分数) return false;
+    let 恢复 = 0;
+    for (const id of Object.keys(缓存分数)) {
+      if (!Object.prototype.hasOwnProperty.call(分数表, id)) continue;
+      const s = Number(缓存分数[id]) || 0;
+      if (s >= 1 && s <= 5) {
+        分数表[id] = s;
+        恢复 += 1;
+      }
+    }
+    return 恢复 > 0;
+  }
+
+  function 清除足迹() {
+    for (const id of Object.keys(分数表)) 分数表[id] = 0;
+    try {
+      localStorage.removeItem(缓存键);
+    } catch (_) {
+      /* ignore */
+    }
+    刷新上色();
+  }
 
   function 显示错误(msg) {
     const el = document.getElementById('错误');
@@ -197,6 +262,7 @@
       li.onclick = () => {
         分数表[id] = 级别;
         刷新上色();
+        写入缓存(); // 一上色就保存，7 天内有效
         关闭面板();
       };
       ul.appendChild(li);
@@ -457,6 +523,14 @@
         显示错误('生成图片失败：浏览器可能内存不足，请关闭其它标签页后重试');
       }
     };
+    const 清除按钮 = document.getElementById('清除足迹');
+    if (清除按钮) {
+      清除按钮.onclick = () => {
+        if (confirm('清除本机已保存的足迹？（分享链接不受影响）')) {
+          清除足迹();
+        }
+      };
+    }
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') 关闭面板();
     });
@@ -482,6 +556,7 @@
 
       清单 = 清;
       for (const u of 清单) 分数表[u.id] = 0;
+      应用缓存到分数表(读取缓存());
       省汇总 = 制县计分.按省汇总(清单, 分数表);
 
       map = L.map('地图', {
